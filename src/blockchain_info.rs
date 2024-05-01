@@ -1,10 +1,9 @@
-use crate::blockchain_address::*;
-use crate::blockchain_status::*;
-use crate::blockchain_transaction::*;
-use dotenv;
-use reqwest;
-use serde_json::Result;
-use tokio;
+use {
+    crate::blockchain_address::BlockchainAddress, crate::blockchain_status::BlockchainStatus,
+    crate::blockchain_transaction::BlockchainTransaction, dotenv, reqwest, serde_json::Result,
+    tokio,
+};
+
 const HOST_ROOT: &str = "https://btcbook.nownodes.io/api/";
 
 #[tokio::main]
@@ -14,17 +13,29 @@ pub async fn send_request(url: &str) -> String {
         .get(url)
         .header(
             "api-key",
-            dotenv::var("API_KEY").expect("could not find api key"),
+            dotenv::var("API_KEY").expect("Could not find key: API_KEY"),
         )
         .send()
         .await
-        .expect("failed to get response")
+        .expect("Failed to get response")
         .text()
         .await
-        .expect("failed to convert payload")
+        .expect("Failed to convert payload")
 }
 
 pub fn blockchain_status_request() -> BlockchainStatus {
     let response = send_request(&HOST_ROOT);
-    serde_json::from_str(&response).expect("failed the parse json")
+    serde_json::from_str(&response).expect("Failed to parse JSON")
+}
+
+pub fn blockchain_address_request(address: &str) -> BlockchainAddress {
+    let url = format!("{}v2/address/{}", HOST_ROOT, address);
+    let response = send_request(&url);
+    println!("Received JSON response: {}", response); // Debug print the API response
+    serde_json::from_str(&response).expect("Failed to parse JSON")
+}
+
+pub fn blockchain_transaction_request(transaction: &str) -> BlockchainTransaction {
+    let response = send_request(&[HOST_ROOT, "v2/tx/", &transaction].join(""));
+    serde_json::from_str(&response).expect("Failed to parse JSON")
 }
